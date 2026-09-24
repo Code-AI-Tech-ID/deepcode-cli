@@ -560,7 +560,9 @@ function App({ projectRoot, initialPrompt, resumeSessionId, forkSessionId, onRes
       // Prompts submitted while a turn is running become supplemental guidance:
       // SessionManager appends them as a user message right before the next LLM
       // call of that turn, so the model can revise what it is doing.
-      if (busyRef.current) {
+      // Slash commands are not prompts: `/exit` must still quit the CLI while a turn
+      // is running, exactly as it did before, so they take the normal path.
+      if (busyRef.current && !submission.command) {
         sessionManager.addSupplementaryPrompt(sessionManager.getActiveSessionId(), {
           text: submission.text,
           imageUrls: submission.imageUrls,

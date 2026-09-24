@@ -139,6 +139,25 @@ test("PromptInput keeps blocking slash commands while busy", async () => {
   }
 });
 
+test("PromptInput still allows /exit while busy so the CLI can quit", async () => {
+  const harness = createHarness();
+  const submissions: PromptSubmission[] = [];
+  const app = renderPromptInput(harness, { busy: true, onSubmit: (submission) => submissions.push(submission) });
+  try {
+    await press(harness, app, "/exit");
+    await press(harness, app, "\r");
+    // App receives the command (not a prompt), so `/exit` keeps quitting the CLI
+    // instead of being queued as guidance for the running turn.
+    assert.deepEqual(
+      submissions.map((submission) => submission.command),
+      ["exit"]
+    );
+    assert.equal(submissions[0]?.steer, undefined);
+  } finally {
+    app.unmount();
+  }
+});
+
 test("PromptInput renders pending guidance and removes the last one on backspace", async () => {
   const harness = createHarness();
   let removed = 0;

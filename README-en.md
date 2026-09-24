@@ -102,7 +102,7 @@ turn. The model therefore reads it together with the work it already did and can
 supersede the earlier instructions. If the model is in the middle of writing an answer, press
 `Ctrl+Enter` to cut that answer short so the prompt is read immediately - its text stays in the
 conversation. Set `steerMode: "interrupt"` to make `Ctrl+Enter` the default for `Enter` as well.
-Up to 10 messages can wait; press `Backspace` on an empty prompt to drop the last one. Running
+Up to 20 messages can wait; press `Backspace` on an empty prompt to drop the last one. Running
 commands are never interrupted, `Esc` still interrupts the turn immediately, and slash commands
 still wait for the turn to finish.
 

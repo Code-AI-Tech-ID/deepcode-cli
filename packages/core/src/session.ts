@@ -374,8 +374,15 @@ export type SupplementaryPrompt = {
   createTime: string;
 };
 
-/** Maximum number of prompts that may wait for the next LLM call of a turn. */
-export const MAX_SUPPLEMENTARY_PROMPTS = 10;
+/**
+ * Maximum number of prompts that may wait for the next LLM call of a turn.
+ *
+ * The queue drains at the next request boundary, so this only caps how many
+ * instructions can pile up faster than one step of the turn. Every queued prompt
+ * travels with each remaining request of that turn, so the limit keeps a burst
+ * from inflating the context (and any attached images) without bound.
+ */
+export const MAX_SUPPLEMENTARY_PROMPTS = 20;
 
 export type SessionManagerOptions = {
   projectRoot: string;

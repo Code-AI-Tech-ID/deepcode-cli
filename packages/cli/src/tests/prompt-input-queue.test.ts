@@ -100,6 +100,25 @@ test("PromptInput still submits a plain prompt while busy so App can queue it", 
       submissions.map((submission) => submission.text),
       ["queued prompt"]
     );
+    // Plain Enter only queues: App decides whether to steer based on steerMode.
+    assert.equal(submissions[0]?.steer, undefined);
+  } finally {
+    app.unmount();
+  }
+});
+
+test("PromptInput marks ctrl+enter as a steering submit", async () => {
+  const harness = createHarness();
+  const submissions: PromptSubmission[] = [];
+  const app = renderPromptInput(harness, { busy: true, onSubmit: (submission) => submissions.push(submission) });
+  try {
+    await press(harness, app, "stop doing that");
+    await press(harness, app, "\u001B[13;5u");
+    assert.deepEqual(
+      submissions.map((submission) => submission.text),
+      ["stop doing that"]
+    );
+    assert.equal(submissions[0]?.steer, true);
   } finally {
     app.unmount();
   }

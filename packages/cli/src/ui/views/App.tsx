@@ -566,11 +566,17 @@ function App({ projectRoot, initialPrompt, resumeSessionId, forkSessionId, onRes
           imageUrls: submission.imageUrls,
           skills: submission.selectedSkills,
         });
+        // Cutting the streaming answer short is opt-in: `Ctrl+Enter` always asks for
+        // it, and `steerMode: "interrupt"` makes it the default for plain `Enter`.
+        // Running tools are never interrupted either way.
+        if (submission.steer || resolveCurrentSettings(projectRoot).steerMode === "interrupt") {
+          sessionManager.steerActiveSession();
+        }
         return;
       }
       void handlePrompt(submission);
     },
-    [handlePrompt, sessionManager]
+    [handlePrompt, projectRoot, sessionManager]
   );
 
   const handlePlanImplementationChoice = useCallback(

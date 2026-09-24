@@ -76,6 +76,11 @@ export type PromptSubmission = {
   alwaysAllows?: PermissionScope[];
   planMode?: boolean;
   isAnswers?: boolean;
+  /**
+   * Set by `Ctrl+Enter`: when a turn is running, cut the answer that is streaming
+   * short so this prompt is read immediately, regardless of `steerMode`.
+   */
+  steer?: boolean;
   command?: "new" | "resume" | "fork" | "continue" | "undo" | "mcp" | "exit";
 };
 
@@ -221,12 +226,12 @@ export const PromptInput = React.memo(function PromptInput({
   const busyStatusText =
     loadingText && loadingText.trim()
       ? `${loadingText}${processOrPasteHint}${queueHint ? ` · ${queueHint}` : ""}`
-      : `esc to interrupt · ctrl+c to cancel input${processOrPasteHint}${queueHint ? ` · ${queueHint}` : ""}`;
+      : `esc to interrupt · ctrl+enter send & cut · ctrl+c to cancel input${processOrPasteHint}${queueHint ? ` · ${queueHint}` : ""}`;
   const footerText = statusMessage
     ? statusMessage
     : busy
       ? busyStatusText
-      : `enter send · shift+enter newline · @ files · ctrl+v image · / commands · ctrl+d exit${processOrPasteHint}${queueHint ? ` · ${queueHint}` : ""}`;
+      : `enter send · shift+enter newline · ctrl+enter steer · @ files · ctrl+v image · / commands · ctrl+d exit${processOrPasteHint}${queueHint ? ` · ${queueHint}` : ""}`;
   const showFooterText = useMemo(
     () => showMenu || showSkillsDropdown || openRawModelDropdown || showModelDropdown || showFileMentionMenu,
     [showMenu, showSkillsDropdown, showModelDropdown, openRawModelDropdown, showFileMentionMenu]
@@ -478,16 +483,17 @@ export const PromptInput = React.memo(function PromptInput({
         }
       }
 
-      if (busy && isPlainReturn) {
-        // While a turn is running, plain prompts become supplemental guidance for
-        // that turn so the user does not have to wait or interrupt. Slash commands
-        // keep the old behaviour because they change view state instead of sending
-        // a prompt.
+      if (busy && (isPlainReturn || returnAction === "steer")) {
+        // While a turn is running, prompts become supplemental guidance for that turn
+        // so the user does not have to wait or interrupt. `Ctrl+Enter` additionally
+        // asks the session to cut the answer that is streaming short. Slash commands
+        // keep the old behaviour because they change view state instead of sending a
+        // prompt.
         if (findExactCommandForBuffer()) {
           setStatusMessage("wait for the current response or press esc to interrupt");
           return;
         }
-        submitCurrentBuffer();
+        submitCurrentBuffer({ steer: returnAction === "steer" });
         return;
       }
 
@@ -496,8 +502,8 @@ export const PromptInput = React.memo(function PromptInput({
         return;
       }
 
-      if (returnAction === "submit") {
-        submitCurrentBuffer();
+      if (returnAction === "submit" || returnAction === "steer") {
+        submitCurrentBuffer({ steer: returnAction === "steer" });
         return;
       }
 
@@ -778,7 +784,7 @@ export const PromptInput = React.memo(function PromptInput({
     return findExactSlashCommand(slashItems, trimmed.split(/\s+/, 1)[0]);
   }
 
-  function submitCurrentBuffer(): void {
+  function submitCurrentBuffer(options?: { steer?: boolean }): void {
     const trimmed = buffer.text.trim();
     if (!trimmed && imageUrls.length === 0 && selectedSkills.length === 0) {
       return;
@@ -800,9 +806,16 @@ export const PromptInput = React.memo(function PromptInput({
       imageUrls,
       selectedSkills,
       planMode,
+      // Only carry the flag when the user actually asked to steer, so a plain submit
+      // stays a plain submit.
+      steer: options?.steer ? true : undefined,
     });
     if (busy) {
-      setStatusMessage(`Guidance queued — read at the model's next step (${queuedPrompts.length + 1} waiting)`);
+      setStatusMessage(
+        options?.steer
+          ? "Guidance sent — cutting the running answer short"
+          : `Guidance queued — read at the model's next step (${queuedPrompts.length + 1} waiting)`
+      );
     }
     resetPromptInput();
   }
@@ -1020,11 +1033,17 @@ export function isRawModeShortcut(input: string, key: Pick<InputKey, "ctrl">): b
   return key.ctrl && (input === "r" || input === "R");
 }
 
-export type PromptReturnKeyAction = "submit" | "newline" | null;
+export type PromptReturnKeyAction = "submit" | "steer" | "newline" | null;
 
-export function getPromptReturnKeyAction(key: Pick<InputKey, "return" | "shift" | "meta">): PromptReturnKeyAction {
+export function getPromptReturnKeyAction(
+  key: Pick<InputKey, "return" | "shift" | "meta" | "ctrl">
+): PromptReturnKeyAction {
   if (!key.return) {
     return null;
+  }
+  if (key.ctrl) {
+    // Ctrl+Enter: send and, while a turn is running, cut the streaming answer short.
+    return "steer";
   }
   if (key.shift || key.meta) {
     return "newline";

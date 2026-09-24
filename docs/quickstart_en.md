@@ -107,8 +107,10 @@ Before editing files, propose a plan for adding pagination to the user list.
 | Action | Key |
 | ------ | --- |
 | Send message | `Enter` |
+| Send guidance while the AI is responding | Type it and press `Enter`; it is injected before the model's next step |
 | Insert a newline | `Shift+Enter` or `Ctrl+J` |
 | Interrupt the current response | `Esc` |
+| Remove the last queued guidance | Press `Backspace` on an empty prompt |
 | Paste an image | `Ctrl+V` |
 | Quit | Press `Ctrl+D` twice, or use `/exit` |
 

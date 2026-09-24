@@ -24,13 +24,20 @@ export function MessageView({ message, collapsed, width = 80 }: MessageViewProps
   if (message.role === "user") {
     const content = message.content || "(no content)";
     const text = message.meta?.isAnswers ? renderMarkdown(content) : content;
-    return (
-      <PromptEchoLine
-        text={text}
-        width={width}
-        attachmentCount={Array.isArray(message.contentParams) ? message.contentParams.length : 0}
-      />
-    );
+    const attachmentCount = Array.isArray(message.contentParams) ? message.contentParams.length : 0;
+
+    if (message.meta?.isSupplementary) {
+      return (
+        <Box flexDirection="column" marginY={0}>
+          <Box marginLeft={1}>
+            <StatusLine bulletColor="yellow" name="Guidance" params="sent while the turn was running" width={width} />
+          </Box>
+          <PromptEchoLine text={text} width={width} attachmentCount={attachmentCount} />
+        </Box>
+      );
+    }
+
+    return <PromptEchoLine text={text} width={width} attachmentCount={attachmentCount} />;
   }
 
   if (message.role === "assistant") {
@@ -169,7 +176,7 @@ function StatusLine({
   params,
   width,
 }: {
-  bulletColor: "gray" | "green" | "red";
+  bulletColor: "gray" | "green" | "red" | "yellow";
   name: string;
   params: string;
   width: number;

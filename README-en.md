@@ -88,10 +88,19 @@ Skills are discovered from these locations, in priority order:
 | Key              | Action                                                   |
 |------------------|----------------------------------------------------------|
 | `Enter`          | Send the prompt                                          |
+| `Enter` (busy)   | Send extra guidance to the turn that is running           |
 | `Shift+Enter`    | Insert a newline (also `Ctrl+J`)                         |
 | `Ctrl+V`         | Paste an image from the clipboard                        |
 | `Esc`            | Interrupt the current model turn                         |
+| `Backspace`      | On an empty prompt: remove the last queued guidance      |
 | `Ctrl+D` twice   | Quit Deep Code                                           |
+
+While a turn is running, `Enter` no longer blocks and does not have to wait: the prompt becomes
+supplemental guidance, appended to the conversation right before the model's next step of that
+turn. The model therefore reads it together with the work it already did and can revise or
+supersede the earlier instructions. Up to 10 messages can wait; press `Backspace` on an empty
+prompt to drop the last one. `Esc` still interrupts the turn immediately, and slash commands
+still wait for the turn to finish.
 
 ## Supported Models
 
